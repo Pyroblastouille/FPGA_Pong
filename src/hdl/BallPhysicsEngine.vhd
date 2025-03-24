@@ -25,12 +25,11 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity BallPhysicsEngine is
     generic(
-        Player_height   : integer := 100;    -- Player height in pixels
-        Player_width    : integer := 10;     -- Player width in pixels
-        Player_x_padding: integer := 20;     -- Number of pixel of padding between the player and its wall
+        Player_height   : integer := 100;   -- Player height in pixels
+        Player_width    : integer := 10;    -- Player width in pixels
+        Player_x_padding: integer := 20;    -- Number of pixel of padding between the player and its wall
         Ball_height     : integer := 5;     -- Ball height in pixels
-        Ball_width      : integer := 5;     -- Ball width in pixels
-        Ball_max_speed  : integer := 17     -- Max ball speed
+        Ball_width      : integer := 5      -- Ball width in pixels
     );  
     port(
         clk             : in std_logic;  -- Input Clock
@@ -170,50 +169,24 @@ begin
                         Ball_y_int <= (to_integer(unsigned(players_reg(15 downto 0))) + Half_Ball_Height + Half_Player_Height)) then
                             Direction_x := not Direction_x;
                             Collide := '1';
+                            Ball_x_int := Player_x_padding + Player_width + Half_Ball_Width;
                             
                             -- Update Speed
-                            if (Ball_y_int >= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (0 * Fifth_Player_Height))) then
+                            if (Ball_y_int <= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (1 * Fifth_Player_Height))) then
                                 Collide_what(4) := '1';
-                                if (Direction_y = '0') then
-                                    Speed_x := Speed_x * 2;
-                                    Speed_y := Speed_y * 2;
-                                 else
-                                    Speed_x := Speed_x * 5;
-                                    Speed_y := Speed_y * 0;
-                                 end if;
-                            elsif (Ball_y_int >= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (1 * Fifth_Player_Height))) then
+                                Speed_y := 5;
+                            elsif (Ball_y_int <= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (2 * Fifth_Player_Height))) then
                                 Collide_what(5) := '1';
-                                if (Direction_y = '0') then
-                                    Speed_x := (Speed_x * 3) / 2;
-                                    Speed_y := (Speed_y * 3) / 2;
-                                else
-                                    Speed_x := Speed_x / 2;
-                                    Speed_y := Speed_y / 2;
-                                end if;
-                            elsif (Ball_y_int >= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (2 * Fifth_Player_Height))) then
+                                Speed_y := 3;
+                            elsif (Ball_y_int <= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (3 * Fifth_Player_Height))) then
                                 Collide_what(6) := '1';
-                                if (Direction_y = '0') then
-                                    Speed_x := Speed_x * 1;
-                                    Speed_y := Speed_y * 1;
-                                end if;
-                            elsif (Ball_y_int >= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (3 * Fifth_Player_Height))) then
+                                Speed_y := 0;
+                            elsif (Ball_y_int <= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (4 * Fifth_Player_Height))) then
                                 Collide_what(7) := '1';
-                                if (Direction_y = '0') then
-                                    Speed_x := Speed_x / 2;
-                                    Speed_y := Speed_y / 2;
-                                else
-                                    Speed_x := (Speed_x * 3) / 2;
-                                    Speed_y := (Speed_y * 3) / 2;
-                                end if;
-                            elsif (Ball_y_int >= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (4 * Fifth_Player_Height))) then
+                                Speed_y := 3;
+                            elsif (Ball_y_int <= (to_integer(unsigned(players_reg(15 downto 0))) - Half_Player_Height + (5 * Fifth_Player_Height))) then
                                 Collide_what(8) := '1';
-                                if (Direction_y = '0') then
-                                    Speed_x := 5;
-                                    Speed_y := Speed_y * 0;
-                                else
-                                    Speed_x := Speed_x * 2;
-                                    Speed_y := Speed_y * 2;
-                                end if;
+                                Speed_y := 5;
                             end if;
                         end if;
                     
@@ -223,60 +196,26 @@ begin
                         Ball_y_int <= (to_integer(unsigned(players_reg(31 downto 16))) + Half_Ball_Height + Half_Player_Height)) then
                         Direction_x := not Direction_x;
                         Collide := '1';
+                        Ball_x_int := (Screen_Width - Player_x_padding - Player_width - Half_Ball_Width);
                         
                         -- Update Speed
-                        if (Ball_y_int >= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (0 * Fifth_Player_Height))) then
+                        if (Ball_y_int <= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (1 * Fifth_Player_Height))) then
                             Collide_what(9) := '1';
-                            if (Direction_y = '0') then
-                                Speed_x := Speed_x * 2;
-                                Speed_y := Speed_y * 2;
-                             else
-                                Speed_x := Speed_x * 5;
-                                Speed_y := Speed_y * 0;
-                             end if;
-                        elsif (Ball_y_int >= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (1 * Fifth_Player_Height))) then
+                            Speed_y := 5;
+                        elsif (Ball_y_int <= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (2 * Fifth_Player_Height))) then
                             Collide_what(10) := '1';
-                            if (Direction_y = '0') then
-                                Speed_x := (Speed_x * 3) / 2;
-                                Speed_y := (Speed_y * 3) / 2;
-                            else
-                                Speed_x := Speed_x / 2;
-                                Speed_y := Speed_y / 2;
-                            end if;
-                        elsif (Ball_y_int >= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (2 * Fifth_Player_Height))) then
+                            Speed_y := 3;
+                        elsif (Ball_y_int <= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (3 * Fifth_Player_Height))) then
                             Collide_what(11) := '1';
-                            if (Direction_y = '0') then
-                                Speed_x := Speed_x * 1;
-                                Speed_y := Speed_y * 1;
-                            end if;
-                        elsif (Ball_y_int >= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (3 * Fifth_Player_Height))) then
+                            Speed_y := 0;
+                        elsif (Ball_y_int <= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (4 * Fifth_Player_Height))) then
                             Collide_what(12) := '1';
-                            if (Direction_y = '0') then
-                                Speed_x := Speed_x / 2;
-                                Speed_y := Speed_y / 2;
-                            else
-                                Speed_x := (Speed_x * 3) / 2;
-                                Speed_y := (Speed_y * 3) / 2;
-                            end if;
-                        elsif (Ball_y_int >= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (4 * Fifth_Player_Height))) then
+                            Speed_y := 3;
+                        elsif (Ball_y_int <= (to_integer(unsigned(players_reg(31 downto 16))) - Half_Player_Height + (5 * Fifth_Player_Height))) then
                             Collide_what(13) := '1';
-                            if (Direction_y = '0') then
-                                Speed_x := 5;
-                                Speed_y := Speed_y * 0;
-                            else
-                                Speed_x := Speed_x * 2;
-                                Speed_y := Speed_y * 2;
-                            end if;
+                            Speed_y := 5;
                         end if;
                       end if;
-
-                    -- Check Max Speed
-                    if(Speed_x > Ball_max_speed) then
-                        Speed_x := Ball_max_speed;
-                    end if;
-                    if(Speed_y > Ball_max_speed) then
-                        Speed_y := Ball_max_speed;
-                    end if;
     
                     Next_state <= WRITE_BACK;
     

@@ -7,9 +7,12 @@ ball_trajectory = [
     (702, 598),
     (798, 498),
     (298, 2),
-    (28, 272),
-    (776, 272),
-    (45, 272),
+    (32, 272),
+    (768, 272),
+    (223, 598),
+    (2, 463),
+    (772, 2),
+    (798, 20),
 ]
 
 # Screen dimensions
@@ -20,8 +23,8 @@ screen_height = 600
 player_width = 10
 player_height = 100  # Full player height
 player_x_padding = 20
-player1_y_position = 290
-player2_y_position = 310
+player1_y_position = 272
+player2_y_position = 290
 
 # Player positions
 player1_x = player_x_padding

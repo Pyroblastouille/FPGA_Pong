@@ -13,8 +13,7 @@ architecture Behavioral of BallPhysicsEngine_TB is
             Player_width    : integer := 10;     -- Player width in pixels
             Player_x_padding: integer := 20;     -- Number of pixel of padding between the player and its wall
             Ball_height     : integer := 5;     -- Ball height in pixels
-            Ball_width      : integer := 5;     -- Ball width in pixels
-            Ball_max_speed  : integer := 17     -- Max ball speed
+            Ball_width      : integer := 5     -- Ball width in pixels
         );
         port(
             clk             : in std_logic;
@@ -45,8 +44,7 @@ begin
             Player_width    => 10,
             Player_x_padding => 20,
             Ball_height     => 5,
-            Ball_width      => 5,
-            Ball_max_speed  => 17
+            Ball_width      => 5
         )
         port map(
             clk          => clk_tb,
@@ -77,7 +75,7 @@ begin
         Screen_reg_tb <= "00000010010110000000001100100000"; -- Width = 800, Height = 600
         
         -- 2. Apply Player Positions
-        Players_reg_tb <= X"01360122"; -- Both Players at Y=120
+        Players_reg_tb <= X"01220110";
 
         wait for 10 ns;
 
@@ -89,14 +87,7 @@ begin
 
         -- 3. Enable the engine and request a frame update
         Request_reg_tb <= "00000000000000000000000000000110"; -- Enable + NFR bit set
-        wait for 20 ns;
-
-        -- 5. Observe Ball Movement for Several Cycles
-        for i in 0 to 20 loop
-            -- Wait for the engine to process one frame
-            wait for 1000 ns;
-            
-        end loop;
+        wait for 100000 ns;
 
         -- End of test
         wait;
