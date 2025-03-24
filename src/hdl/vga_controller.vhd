@@ -79,8 +79,8 @@ begin
                 and (current_v >= V_Sync_pulse + V_Back_porch
                 and current_v < v_total - V_Front_porch)) then
                     blank <= '0';
-                    Hcount <= std_logic_vector(to_unsigned(current_h-H_Sync_pulse+H_Back_porch,13));
-                    Vcount <= std_logic_vector(to_unsigned(current_v-V_Sync_pulse+V_Back_porch,13));
+                    Hcount <= std_logic_vector(to_unsigned(current_h-(H_Sync_pulse+H_Back_porch),13));
+                    Vcount <= std_logic_vector(to_unsigned(current_v-(V_Sync_pulse+V_Back_porch),13));
                 else
                     blank <= '1';
             end if;

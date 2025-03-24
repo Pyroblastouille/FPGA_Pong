@@ -59,7 +59,8 @@ entity JoystickGrabber is
     miso_2 : in STD_LOGIC;
     mosi_2 : out STD_LOGIC;
     sclk_2 : out STD_LOGIC;
-    ss_2 : out STD_LOGIC
+    ss_2 : out STD_LOGIC;
+    set_vadj:out std_logic_vector(1 downto 0)
 
     );
 end JoystickGrabber;
@@ -160,6 +161,6 @@ begin
             joy_2(17) <= bfr_joy_2_btn_joystick;
         end if;
     end process get_data;
-
+set_vadj <= "11"; --Défini la sortie du pmod JXADC à 3.3v
 
 end Behavioral;
