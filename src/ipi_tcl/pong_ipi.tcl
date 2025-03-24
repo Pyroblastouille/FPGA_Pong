@@ -43,6 +43,13 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 # To test this script, run the following commands from Vivado Tcl console:
 # source mb_design_script.tcl
 
+
+# The design that will be created by this Tcl script contains the following 
+# module references:
+# BallPhysicsEngine, JoystickGrabber, RegisterBank, axi4lite_if
+
+# Please add the sources of those modules before sourcing this Tcl script.
+
 # If there is no project opened, this script will create a
 # project, but make sure you do not have an existing project
 # <./myproj/project_1.xpr> in the current working folder.
@@ -135,11 +142,10 @@ xilinx.com:ip:proc_sys_reset:5.0\
 xilinx.com:ip:lmb_v10:3.0\
 xilinx.com:ip:lmb_bram_if_cntlr:4.0\
 xilinx.com:ip:blk_mem_gen:8.4\
-xilinx.com:ip:mdm_riscv:1.0\
-xilinx.com:ip:axi_gpio:2.0\
 xilinx.com:ip:axi_timer:2.0\
 xilinx.com:ip:axi_intc:4.1\
 xilinx.com:ip:xlconcat:2.1\
+xilinx.com:ip:mdm_riscv:1.0\
 "
 
    set list_ips_missing ""
@@ -157,6 +163,34 @@ xilinx.com:ip:xlconcat:2.1\
       set bCheckIPsPassed 0
    }
 
+}
+
+##################################################################
+# CHECK Modules
+##################################################################
+set bCheckModules 1
+if { $bCheckModules == 1 } {
+   set list_check_mods "\ 
+BallPhysicsEngine\
+JoystickGrabber\
+RegisterBank\
+axi4lite_if\
+"
+
+   set list_mods_missing ""
+   common::send_gid_msg -ssname BD::TCL -id 2020 -severity "INFO" "Checking if the following modules exist in the project's sources: $list_check_mods ."
+
+   foreach mod_vlnv $list_check_mods {
+      if { [can_resolve_reference $mod_vlnv] == 0 } {
+         lappend list_mods_missing $mod_vlnv
+      }
+   }
+
+   if { $list_mods_missing ne "" } {
+      catch {common::send_gid_msg -ssname BD::TCL -id 2021 -severity "ERROR" "The following module(s) are not found in the project: $list_mods_missing" }
+      common::send_gid_msg -ssname BD::TCL -id 2022 -severity "INFO" "Please add source files for the missing module(s) above."
+      set bCheckIPsPassed 0
+   }
 }
 
 if { $bCheckIPsPassed != 1 } {
@@ -203,8 +237,6 @@ proc create_root_design { parentCell } {
 
 
   # Create interface ports
-  set GPIO_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gpio_rtl:1.0 GPIO_0 ]
-
 
   # Create ports
   set clk_in1 [ create_bd_port -dir I -type clk clk_in1 ]
@@ -215,6 +247,14 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_HIGH} \
  ] $reset
+  set j1_cs [ create_bd_port -dir O j1_cs ]
+  set j1_sclk [ create_bd_port -dir O j1_sclk ]
+  set j1_mosi [ create_bd_port -dir O j1_mosi ]
+  set j2_cs [ create_bd_port -dir O j2_cs ]
+  set j2_mosi [ create_bd_port -dir O j2_mosi ]
+  set j2_sclk [ create_bd_port -dir O j2_sclk ]
+  set j1_miso [ create_bd_port -dir I j1_miso ]
+  set j2_miso [ create_bd_port -dir I j2_miso ]
 
   # Create instance: microblaze_riscv_0, and set properties
   set microblaze_riscv_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:microblaze_riscv:1.0 microblaze_riscv_0 ]
@@ -248,18 +288,7 @@ proc create_root_design { parentCell } {
 
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
-  set_property CONFIG.NUM_MI {3} $axi_interconnect_0
-
-
-  # Create instance: mdm_riscv_0, and set properties
-  set mdm_riscv_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mdm_riscv:1.0 mdm_riscv_0 ]
-
-  # Create instance: axi_gpio_0, and set properties
-  set axi_gpio_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 axi_gpio_0 ]
-  set_property -dict [list \
-    CONFIG.C_ALL_OUTPUTS {1} \
-    CONFIG.C_GPIO_WIDTH {8} \
-  ] $axi_gpio_0
+  set_property CONFIG.NUM_MI {4} $axi_interconnect_0
 
 
   # Create instance: axi_timer_0, and set properties
@@ -275,14 +304,60 @@ proc create_root_design { parentCell } {
   set_property CONFIG.NUM_PORTS {1} $xlconcat_0
 
 
+  # Create instance: BallPhysicsEngine_0, and set properties
+  set block_name BallPhysicsEngine
+  set block_cell_name BallPhysicsEngine_0
+  if { [catch {set BallPhysicsEngine_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $BallPhysicsEngine_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  # Create instance: JoystickGrabber_0, and set properties
+  set block_name JoystickGrabber
+  set block_cell_name JoystickGrabber_0
+  if { [catch {set JoystickGrabber_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $JoystickGrabber_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  # Create instance: RegisterBank_0, and set properties
+  set block_name RegisterBank
+  set block_cell_name RegisterBank_0
+  if { [catch {set RegisterBank_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $RegisterBank_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  # Create instance: axi4lite_if_0, and set properties
+  set block_name axi4lite_if
+  set block_cell_name axi4lite_if_0
+  if { [catch {set axi4lite_if_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $axi4lite_if_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  # Create instance: mdm_riscv_0, and set properties
+  set mdm_riscv_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mdm_riscv:1.0 mdm_riscv_0 ]
+
   # Create interface connections
   connect_bd_intf_net -intf_net Conn [get_bd_intf_pins ilmb_v10_0/LMB_Sl_0] [get_bd_intf_pins ilmb_bram_if_cntlr_0/SLMB]
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins dlmb_v10_0/LMB_Sl_0] [get_bd_intf_pins dlmb_bram_if_cntlr_1/SLMB]
-  connect_bd_intf_net -intf_net axi_gpio_0_GPIO [get_bd_intf_ports GPIO_0] [get_bd_intf_pins axi_gpio_0/GPIO]
   connect_bd_intf_net -intf_net axi_intc_0_interrupt [get_bd_intf_pins axi_intc_0/interrupt] [get_bd_intf_pins microblaze_riscv_0/INTERRUPT]
-  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins axi_gpio_0/S_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M01_AXI [get_bd_intf_pins axi_interconnect_0/M01_AXI] [get_bd_intf_pins axi_timer_0/S_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M02_AXI [get_bd_intf_pins axi_interconnect_0/M02_AXI] [get_bd_intf_pins axi_intc_0/s_axi]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M03_AXI [get_bd_intf_pins axi_interconnect_0/M03_AXI] [get_bd_intf_pins axi4lite_if_0/s_axi]
   connect_bd_intf_net -intf_net dlmb_bram_if_cntlr_1_BRAM_PORT [get_bd_intf_pins dlmb_bram_if_cntlr_1/BRAM_PORT] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTB]
   connect_bd_intf_net -intf_net ilmb_bram_if_cntlr_0_BRAM_PORT [get_bd_intf_pins ilmb_bram_if_cntlr_0/BRAM_PORT] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA]
   connect_bd_intf_net -intf_net mdm_riscv_0_MBDEBUG_0 [get_bd_intf_pins mdm_riscv_0/MBDEBUG_0] [get_bd_intf_pins microblaze_riscv_0/DEBUG]
@@ -291,20 +366,41 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net microblaze_riscv_0_M_AXI_DP [get_bd_intf_pins microblaze_riscv_0/M_AXI_DP] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
 
   # Create port connections
+  connect_bd_net -net BallPhysicsEngine_0_Ball_reg [get_bd_pins BallPhysicsEngine_0/Ball_reg] [get_bd_pins RegisterBank_0/ball_reg]
+  connect_bd_net -net BallPhysicsEngine_0_State_Col_reg [get_bd_pins BallPhysicsEngine_0/State_Col_reg] [get_bd_pins RegisterBank_0/state_reg]
+  connect_bd_net -net JoystickGrabber_0_joy_1 [get_bd_pins JoystickGrabber_0/joy_1] [get_bd_pins RegisterBank_0/joystick1_reg]
+  connect_bd_net -net JoystickGrabber_0_joy_2 [get_bd_pins JoystickGrabber_0/joy_2] [get_bd_pins RegisterBank_0/joystick2_reg]
+  connect_bd_net -net JoystickGrabber_0_mosi_1 [get_bd_pins JoystickGrabber_0/mosi_1] [get_bd_ports j1_mosi]
+  connect_bd_net -net JoystickGrabber_0_mosi_2 [get_bd_pins JoystickGrabber_0/mosi_2] [get_bd_ports j2_mosi]
+  connect_bd_net -net JoystickGrabber_0_sclk_1 [get_bd_pins JoystickGrabber_0/sclk_1] [get_bd_ports j1_sclk]
+  connect_bd_net -net JoystickGrabber_0_sclk_2 [get_bd_pins JoystickGrabber_0/sclk_2] [get_bd_ports j2_sclk]
+  connect_bd_net -net JoystickGrabber_0_ss_1 [get_bd_pins JoystickGrabber_0/ss_1] [get_bd_ports j1_cs]
+  connect_bd_net -net JoystickGrabber_0_ss_2 [get_bd_pins JoystickGrabber_0/ss_2] [get_bd_ports j2_cs]
+  connect_bd_net -net RegisterBank_0_players_reg [get_bd_pins RegisterBank_0/players_reg] [get_bd_pins BallPhysicsEngine_0/Players_reg]
+  connect_bd_net -net RegisterBank_0_rd_data_o [get_bd_pins RegisterBank_0/rd_data_o] [get_bd_pins axi4lite_if_0/rd_data_i]
+  connect_bd_net -net RegisterBank_0_request_reg [get_bd_pins RegisterBank_0/request_reg] [get_bd_pins BallPhysicsEngine_0/Request_reg]
+  connect_bd_net -net RegisterBank_0_screen_reg [get_bd_pins RegisterBank_0/screen_reg] [get_bd_pins BallPhysicsEngine_0/Screen_reg]
+  connect_bd_net -net axi4lite_if_0_rd_addr_o [get_bd_pins axi4lite_if_0/rd_addr_o] [get_bd_pins RegisterBank_0/rd_addr_i]
+  connect_bd_net -net axi4lite_if_0_rd_valid_o [get_bd_pins axi4lite_if_0/rd_valid_o] [get_bd_pins RegisterBank_0/rd_valid_i]
+  connect_bd_net -net axi4lite_if_0_wr_addr_o [get_bd_pins axi4lite_if_0/wr_addr_o] [get_bd_pins RegisterBank_0/wr_addr_i]
+  connect_bd_net -net axi4lite_if_0_wr_data_o [get_bd_pins axi4lite_if_0/wr_data_o] [get_bd_pins RegisterBank_0/wr_data_i]
+  connect_bd_net -net axi4lite_if_0_wr_valid_o [get_bd_pins axi4lite_if_0/wr_valid_o] [get_bd_pins RegisterBank_0/wr_valid_i]
   connect_bd_net -net axi_timer_0_interrupt [get_bd_pins axi_timer_0/interrupt] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net clk_in1_0_1 [get_bd_ports clk_in1] [get_bd_pins clk_wiz_0/clk_in1]
-  connect_bd_net -net clk_wiz_0_clk_100mhz [get_bd_pins clk_wiz_0/clk_100mhz] [get_bd_pins microblaze_riscv_0/Clk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins ilmb_v10_0/LMB_Clk] [get_bd_pins dlmb_v10_0/LMB_Clk] [get_bd_pins ilmb_bram_if_cntlr_0/LMB_Clk] [get_bd_pins dlmb_bram_if_cntlr_1/LMB_Clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_gpio_0/s_axi_aclk] [get_bd_pins axi_timer_0/s_axi_aclk] [get_bd_pins axi_intc_0/s_axi_aclk]
+  connect_bd_net -net clk_wiz_0_clk_100mhz [get_bd_pins clk_wiz_0/clk_100mhz] [get_bd_pins microblaze_riscv_0/Clk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins ilmb_v10_0/LMB_Clk] [get_bd_pins dlmb_v10_0/LMB_Clk] [get_bd_pins ilmb_bram_if_cntlr_0/LMB_Clk] [get_bd_pins dlmb_bram_if_cntlr_1/LMB_Clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_timer_0/s_axi_aclk] [get_bd_pins axi_intc_0/s_axi_aclk] [get_bd_pins BallPhysicsEngine_0/clk] [get_bd_pins JoystickGrabber_0/s_axi_aclk] [get_bd_pins axi4lite_if_0/s_axi_aclk] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins RegisterBank_0/clk]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins clk_wiz_0/locked] [get_bd_pins proc_sys_reset_0/dcm_locked]
+  connect_bd_net -net j1_miso_1 [get_bd_ports j1_miso] [get_bd_pins JoystickGrabber_0/miso_1]
+  connect_bd_net -net j2_miso_1 [get_bd_ports j2_miso] [get_bd_pins JoystickGrabber_0/miso_2]
   connect_bd_net -net mdm_riscv_0_Debug_SYS_Rst [get_bd_pins mdm_riscv_0/Debug_SYS_Rst] [get_bd_pins proc_sys_reset_0/mb_debug_sys_rst]
   connect_bd_net -net proc_sys_reset_0_bus_struct_reset [get_bd_pins proc_sys_reset_0/bus_struct_reset] [get_bd_pins ilmb_v10_0/SYS_Rst] [get_bd_pins dlmb_v10_0/SYS_Rst] [get_bd_pins ilmb_bram_if_cntlr_0/LMB_Rst] [get_bd_pins dlmb_bram_if_cntlr_1/LMB_Rst]
   connect_bd_net -net proc_sys_reset_0_interconnect_aresetn [get_bd_pins proc_sys_reset_0/interconnect_aresetn] [get_bd_pins axi_interconnect_0/ARESETN]
   connect_bd_net -net proc_sys_reset_0_mb_reset [get_bd_pins proc_sys_reset_0/mb_reset] [get_bd_pins microblaze_riscv_0/Reset]
-  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins proc_sys_reset_0/peripheral_aresetn] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_gpio_0/s_axi_aresetn] [get_bd_pins axi_timer_0/s_axi_aresetn] [get_bd_pins axi_intc_0/s_axi_aresetn]
+  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins proc_sys_reset_0/peripheral_aresetn] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_timer_0/s_axi_aresetn] [get_bd_pins axi_intc_0/s_axi_aresetn] [get_bd_pins JoystickGrabber_0/s_axi_aresetn] [get_bd_pins axi4lite_if_0/s_axi_aresetn] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins RegisterBank_0/rst]
   connect_bd_net -net reset_0_1 [get_bd_ports reset] [get_bd_pins clk_wiz_0/reset] [get_bd_pins proc_sys_reset_0/ext_reset_in]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins xlconcat_0/dout] [get_bd_pins axi_intc_0/intr]
 
   # Create address segments
-  assign_bd_address -offset 0x40000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces microblaze_riscv_0/Data] [get_bd_addr_segs axi_gpio_0/S_AXI/Reg] -force
+  assign_bd_address -offset 0x80000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces microblaze_riscv_0/Data] [get_bd_addr_segs axi4lite_if_0/s_axi/reg0] -force
   assign_bd_address -offset 0x41200000 -range 0x00010000 -target_address_space [get_bd_addr_spaces microblaze_riscv_0/Data] [get_bd_addr_segs axi_intc_0/S_AXI/Reg] -force
   assign_bd_address -offset 0x41C00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces microblaze_riscv_0/Data] [get_bd_addr_segs axi_timer_0/S_AXI/Reg] -force
   assign_bd_address -offset 0x00000000 -range 0x00008000 -target_address_space [get_bd_addr_spaces microblaze_riscv_0/Data] [get_bd_addr_segs dlmb_bram_if_cntlr_1/SLMB/Mem] -force

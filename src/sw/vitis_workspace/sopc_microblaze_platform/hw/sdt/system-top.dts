@@ -1,0 +1,30 @@
+/dts-v1/;
+#include "pl.dtsi"
+/ {
+	device_id = "7a200t";
+	#address-cells = <1>;
+	#size-cells = <1>;
+	slrcount = <1>;
+	dlmb_bram_if_cntlr_1_memory: memory@0 {
+		compatible = "xlnx,lmb-bram-if-cntlr-4.0";
+		xlnx,ip-name = "lmb_bram_if_cntlr";
+		device_type = "memory";
+		memory_type = "memory";
+		reg = <0x00000000 0x8000>;
+	};
+	chosen {
+	};
+	aliases {
+	};
+	amba_pl: amba_pl {
+		cpus_microblaze_riscv_0: cpus_microblaze_riscv@0 {
+			address-map = <0x00000000 &dlmb_bram_if_cntlr_1_memory 0x00000000 0x8000>, 
+			      <0x00000000 &dlmb_bram_if_cntlr_1 0x00000000 0x8000>, 
+			      <0x41200000 &axi_intc_0 0x41200000 0x10000>, 
+			      <0x41c00000 &axi_timer_0 0x41c00000 0x10000>, 
+			      <0x80000000 &axi4lite_if_0 0x80000000 0x80000000>;
+			#ranges-address-cells = <0x1>;
+			#ranges-size-cells = <0x1>;
+		};
+	};
+};
