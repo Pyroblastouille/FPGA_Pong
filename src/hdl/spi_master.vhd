@@ -63,13 +63,17 @@ ARCHITECTURE logic OF spi_master IS
   SIGNAL rx_buffer   : STD_LOGIC_VECTOR(d_width-1 DOWNTO 0); --receive data buffer
   SIGNAL tx_buffer   : STD_LOGIC_VECTOR(d_width-1 DOWNTO 0); --transmit data buffer
   SIGNAL last_bit_rx : INTEGER RANGE 0 TO d_width*2;         --last rx data bit location
+  signal sclk_bfr : std_logic;
+  signal ss_n_bfr : std_logic_vector(slaves-1 downto 0);
 BEGIN
+    sclk <= sclk_bfr;
+    ss_n <= ss_n_bfr;
   PROCESS(clock, reset_n)
   BEGIN
 
     IF(reset_n = '0') THEN        --reset system
       busy <= '1';                --set busy signal
-      ss_n <= (OTHERS => '1');    --deassert all slave select lines
+      ss_n_bfr <= (OTHERS => '1');    --deassert all slave select lines
       mosi <= 'Z';                --set master out to high impedance
       rx_data <= (OTHERS => '0'); --clear receive data port
       state <= ready;             --go to ready state when reset is exited
@@ -79,10 +83,10 @@ BEGIN
 
         WHEN ready =>
           busy <= '0';             --clock out not busy signal
-          ss_n <= (OTHERS => '1'); --set all slave select outputs high
+          ss_n_bfr <= (OTHERS => '1'); --set all slave select outputs high
           mosi <= 'Z';             --set mosi output high impedance
           continue <= '0';         --clear continue flag
-          sclk <= cpol;            --set spi clock polarity
+          sclk_bfr <= cpol;            --set spi clock polarity
           --user input to initiate transaction
           IF(enable = '1') THEN       
             busy <= '1';             --set busy signal
@@ -109,7 +113,7 @@ BEGIN
 
         WHEN execute =>
           busy <= '1';        --set busy signal
-          ss_n(slave) <= '0'; --set proper slave select output
+          ss_n_bfr(slave) <= '0'; --set proper slave select output
           
           --system clock to sclk ratio is met
           IF(count = clk_ratio) THEN        
@@ -122,12 +126,12 @@ BEGIN
             END IF;
             
             --spi clock toggle needed
-            IF(clk_toggles <= d_width*2 AND ss_n(slave) = '0') THEN 
-              sclk <= NOT sclk; --toggle spi clock
+            IF(clk_toggles <= d_width*2 AND ss_n_bfr(slave) = '0') THEN 
+              sclk_bfr <= NOT sclk_bfr; --toggle spi clock
             END IF;
             
             --receive spi clock toggle
-            IF(assert_data = '0' AND clk_toggles < last_bit_rx + 1 AND ss_n(slave) = '0') THEN 
+            IF(assert_data = '0' AND clk_toggles < last_bit_rx + 1 AND ss_n_bfr(slave) = '0') THEN 
               rx_buffer <= rx_buffer(d_width-2 DOWNTO 0) & miso; --shift in received bit
             END IF;
             
@@ -154,7 +158,7 @@ BEGIN
             --end of transaction
             IF((clk_toggles = d_width*2 + 1) AND cont = '0') THEN   
               busy <= '0';             --clock out not busy signal
-              ss_n <= (OTHERS => '1'); --set all slave selects high
+              ss_n_bfr <= (OTHERS => '1'); --set all slave selects high
               mosi <= 'Z';             --set mosi output high impedance
               rx_data <= rx_buffer;    --clock out received data to output port
               state <= ready;          --return to ready state
