@@ -71,7 +71,7 @@ architecture behavioral of VGA_ctrl is
    signal current_h: integer := 0;
    signal current_v: integer := 0;
 begin
-    PROCESS(clk,rst,current_h,current_v)
+    PROCESS(clk)
         begin
             --g�rer le blank
             if ((current_h >= H_Sync_pulse + H_Back_porch
@@ -91,6 +91,8 @@ begin
                 Hcount <= (others => '0');
                 Vcount <= (others => '0');
                 blank <= '1';
+                H_sync <= not H_sync_polarity;
+                V_sync <= not V_sync_polarity;
             elsif (rising_edge(clk)) then
                 frame <= '0';
                 --Mise � jour Hcount et Vcount
