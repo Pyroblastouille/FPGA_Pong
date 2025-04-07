@@ -1,0 +1,9 @@
+axi4lite_if_0:
+- axi4lite_if
+- None
+axi_intc_0:
+- axi_intc
+- intc
+axi_timer_0:
+- axi_timer
+- tmrctr
