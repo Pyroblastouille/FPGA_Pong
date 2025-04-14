@@ -113,54 +113,8 @@ architecture Behavioral of vga_bram_interface is
     constant V_Back_porch: integer :=33;		-- nombre de lignes porch
 begin
 
-testing_process : process(clk)
-    constant LEFT_TOP : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((0+0*640)/8,32));
-    constant RIGHT_TOP : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((639+0*640)/8,32));
-    constant MIDDLE_TOP : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((319+0*640)/8,32));
-
-    constant LEFT_MIDDLE : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((0+239*640)/8,32));
-    constant RIGHT_MIDDLE : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((639+239*640)/8,32));
-    constant MIDDLE_MIDDLE : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((319+239*640)/8,32));
-    constant MIDDLE_MIDDLE_UP : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((319+238*640)/8,32));
-    constant MIDDLE_MIDDLE_DOWN : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((319+240*640)/8,32));
-    constant MIDDLE_MIDDLE_DOWN_M1 : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((319+240*640)/8-1,32));
-    constant MIDDLE_MIDDLE_DOWN_P1 : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((319+240*640)/8+1,32));
-    
-    constant LEFT_BOT : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((0+479*640)/8,32));
-    constant RIGHT_BOT : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((639+479*640)/8,32));
-    constant MIDDLE_BOT : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned((319+479*640)/8,32));
-begin
-    if(rising_edge(clk)) then
-        case bram_addr_bfr is
-            when LEFT_TOP =>     --  x   0   7   y   0   0
-                bram_data_bfr <= X"FFFF0000";
-            when RIGHT_TOP =>     --  x   632 639 y   0   0
-                bram_data_bfr <= X"0000FFFF";
-            when MIDDLE_TOP =>     --  x   0   7   y   1   1
-                bram_data_bfr <= X"00000000";
-            when LEFT_MIDDLE =>     --  x   0   7   y   239 239
-                bram_data_bfr <= X"FFFF0000";
-            when RIGHT_MIDDLE =>    --  x   632 639 y   239 239
-                bram_data_bfr <= X"0000FFFF";
-            when MIDDLE_MIDDLE =>   --  x   312 319 y   239 239
-                bram_data_bfr <= X"00000000";
-            when MIDDLE_MIDDLE_UP =>   --  x   312 319 y   239 239
-                bram_data_bfr <= X"89ABCDEF";
-            when MIDDLE_MIDDLE_DOWN =>   --  x   312 319 y   239 239
-                bram_data_bfr <= X"01234567";
-            when MIDDLE_MIDDLE_DOWN_M1 =>   --  x   312 319 y   239 239
-                bram_data_bfr <= X"89ABCDEF";
-            when LEFT_BOT =>     --  x   
-                bram_data_bfr <= X"FFFF0000";
-            when MIDDLE_BOT => --pixel 306560
-                bram_data_bfr <= X"00000000";
-            when RIGHT_BOT => --pixel 307199
-                bram_data_bfr <= X"0000FFFF";
-            when others =>
-                bram_data_bfr <= X"FFFFFFFF";
-        end case;
-    end if;
-end process testing_process;
+bram_data_bfr <= bram_data;
+bram_addr <= bram_addr_bfr;
 -- ###########################
 	-- 	start instantiation VGA
 	-- ###########################
